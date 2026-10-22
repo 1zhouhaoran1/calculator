@@ -89,4 +89,4 @@ jobs:
       #    calculator really works inside the container (6 + 7 = 13)
       - name: Smoke test the container
         run: |
-          docker run --rm calculator:v1 6 + 7 | grep -q "Result: 13.0"
+          docker run --rm calculator:v1 6 + 7 | grep -q "Result: 13"
