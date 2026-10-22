@@ -1,5 +1,7 @@
 # ============================================================
-# Lab 5 - Continuous Integration pipeline for the calculator
+# Lab 5 + Lab 6 - CI pipeline for the calculator
+# Lab 5: compile + unit test on a JDK 17 / 21 matrix
+# Lab 6: additionally build the Docker image after tests pass
 # Triggered on every push to main and every pull request to main
 # ============================================================
 name: CI Calculator
@@ -50,3 +52,41 @@ jobs:
       # 5. Run all JUnit 5 test cases written in Lab 4
       - name: Run JUnit 5 tests
         run: mvn test
+
+  # ==========================================================
+  # Lab 6 - Build the Docker image after ALL test jobs passed.
+  # needs: build  -> this job only runs when the JDK 17/21
+  #        test matrix finished successfully (code -> test -> image)
+  # ==========================================================
+  docker:
+    name: Build Docker image
+    needs: build          # wait until every unit test job is green
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Get the source code (contains the Dockerfile)
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # 2. Create a Buildx builder for efficient, cache-aware builds
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 3. Build the calculator image from the Dockerfile.
+      #    push: false -> only build, do NOT push to Docker Hub in CI.
+      #    cache-from/to: reuse layers between runs to speed up builds.
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: calculator:v1
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 4. Smoke test: run the freshly built image and check that the
+      #    calculator really works inside the container (6 + 7 = 13)
+      - name: Smoke test the container
+        run: |
+          docker run --rm calculator:v1 6 + 7 | grep -q "Result: 13.0"
