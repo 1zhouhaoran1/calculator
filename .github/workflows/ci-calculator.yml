@@ -81,6 +81,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
+          load: true          # load the built image into the local daemon
           tags: calculator:v1
           cache-from: type=gha
           cache-to: type=gha,mode=max
